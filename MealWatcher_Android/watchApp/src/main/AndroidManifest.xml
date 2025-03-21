@@ -15,7 +15,6 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!--<uses-permission android:name="REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />-->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
     <!-- Required for Nearby Connections -->
@@ -31,8 +30,6 @@
     <uses-permission android:minSdkVersion="32" android:name="android.permission.NEARBY_WIFI_DEVICES" />
     <uses-permission android:minSdkVersion="32" android:name="android.permission.READ_PHONE_STATE" />
     <!-- Optional: only required for FILE payloads -->
-<!--    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>-->
-
 
     <uses-feature android:name="android.hardware.type.watch"/>
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" />
@@ -61,11 +58,11 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
 
+
         <service
             android:name="research.mealwatcher.StayAwake"
             android:enabled="true"
             android:exported="false">
-<!--            android:foregroundServiceType="health">-->
             <intent-filter>
                 <action android:name="research.mealwatcher.ACTION_DATA_TRANSFER" />
                 <category android:name="android.intent.category.DEFAULT" />

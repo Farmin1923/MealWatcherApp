@@ -95,7 +95,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         AmbientModeSupport.AmbientCallbackProvider {
 
     private static final long TIMEOUT_DURATION_MS = 30000;
-    //public static TextView textBottom;
     public static Button watchRecordButtonID;
     public static int AppState;     // 0=>idle (no service running); 1=>recording;
     public static Intent serviceIntent;
@@ -106,16 +105,12 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
     public static Notification mNotification;
     static View.OnClickListener recordButtonOnClickListener; /* callback for click event of record button */
     static View.OnLongClickListener recordButtonOnLongClickListener; /* callback for long press event of record button */
-    //private ProgressBar progressBar;
-    static FileOutputStream fos;
-    static FileOutputStream fosTime;
 
-    static boolean is_debugging = true; /* This flag is used to let us know if we should log or not. */
+
     static String logFileName;
     static String logSyncFileName;
     static boolean isInitialUpload = true;
     static File logFile;
-    //private TextView textViewProgressMessage;
     /*
      * Declare an ambient mode controller, which will be used by
      * the activity to determine if the current mode is ambient.
@@ -132,7 +127,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
     static boolean shouldStartUploading = false;
     private static String recordButtonStatus = "off"; /*Variable holding record button status to ensure no duplicate requests are processed.*/
     private static final String[] REQUIRED_PERMISSIONS;
-    //private static Button dummy;
 
     static {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -165,7 +159,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
             if (intent.getAction().equals("com.example.ACTION_FINISH_TASK_ACTIVITY")) {
                 finishAndRemoveTask();
             } else if (intent.getAction().equals("com.example.ACTION_FINISH_ACTIVITY")) {
-                //logFunction_watch.information("Activity", "onDestroy()");
 
                 if(isRecordingFinished){
                     logFunction_watch.information("Watch", "App closed normally");
@@ -174,7 +167,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
                 }
 
                 filesFailedUpload = logFunction_watch.failedToUpload();
-                // System.out.println("Number of files failed to upload: " + "On Destroy: " + filesFailedUpload);
                 SharedPreferences.Editor mEditor = sharedPreference.edit();
                 mEditor.putInt("failed_upload", filesFailedUpload);
                 mEditor.apply();
@@ -200,12 +192,10 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         }
     };
 
-    //static TextView version_number_field;
     private static Button sendFile;
 
     static Boolean isSendFileClicked;
 
-    //static TextView storageFile_number;
 
     private static SharedPreferences sharedPreference;
     static int filesFailedUpload;
@@ -258,7 +248,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
     };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        System.out.println("In On create method of watch!");
         super.onCreate(savedInstanceState);
 
         //For making the battery settings unrestricted
@@ -270,9 +259,7 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         }
 
 
-//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
-        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         applicationContext = getApplicationContext();
 
@@ -289,26 +276,14 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
 
         init();     // creates all button callback functions
 
-        /*//The default uncaught exception handler: when a thread abruptly terminates due to an uncaught exception
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                handleUncaughtException(t, e);
-            }
-        });*/
 
 
         //Showing the file number that are failed to upload
         sharedPreference = getSharedPreferences("myPreferences", 0);
-        //System.out.println("shared is null = " + Objects.isNull(sharedPreference));
 
-        //storageFile_number = findViewById(R.id.storageFile);
         filesFailedUpload = sharedPreference.getInt("failed_upload", 0);
         File[] files = getExternalFilesDir(null).listFiles();
         logFunction_watch.information("Watch", "Number of files failed to upload in the previous session: " + filesFailedUpload);
-
-        // System.out.println("Number of files failed to upload: " + "From shared preference: " + filesFailedUpload);
-        //storageFile_number.setText(String.valueOf(filesFailedUpload));
 
         //Showing the watch time at the top
         timeShow = findViewById(R.id.textTime);
@@ -340,12 +315,10 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         // create IntentService (executes StayAwake.onCreate())
         serviceIntent = new Intent(applicationContext, StayAwake.class);
 
-        //writeToLog("Registering broadcast receiver");
         // Register the broadcast receiver
         IntentFilter filter = new IntentFilter("com.example.ACTION_FINISH_ACTIVITY");
         registerReceiver(broadcastReceiver, filter);
 
-        //writeToLog("Enabling ambient mode");
         /*
         Enabling ambient mode. If we don't enable this the application will go to the recent apps,
         when the watch switched to ambient mode (When watch is not used, watch switches to low-power mode
@@ -354,17 +327,11 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         ambientController = AmbientModeSupport.attach(this);
         Wearable.getDataClient(this).addListener(this);
 
-        //progressBar = findViewById(R.id.progressBar);
-        //textViewProgressMessage = findViewById(R.id.textViewProgressMessage);
         startRecordingTimeoutRunnable = new Runnable() {
             @Override
             public void run() {
                 if (isStartWatchButtonClicked) {
                     isStartWatchButtonClicked = false;
-                    // Hide the ProgressBar when you receive a response from the phone app or when the timeout occurs
-                    //progressBar.setVisibility(View.GONE);
-                    // textViewProgressMessage.setVisibility(View.GONE);
-
                     // This method is called when the timeout occurs
                     informUser();
                 }
@@ -380,17 +347,12 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
                     shouldStartUploading = false;
                     // TODO: Confirm here..
                     if (recordButtonStatus.equals("off")) {
-                        //writeToLog("Sending msg to StayAwake to clean resources as phone app is not available.");
                         StayAwake.sessionFinished = true;
                         serviceIntent.setAction("Clean");
                         startService(serviceIntent);
                         Intent closingIntent = new Intent("com.example.ACTION_FINISH_ACTIVITY");
                         sendBroadcast(closingIntent);
 
-                        // Closing the app after cleaning the resources.
-//                    Intent intent = new Intent("com.example.ACTION_FINISH_TASK_ACTIVITY");
-//                    sendBroadcast(intent);
-                        //finishAffinity();
                     }
                 }
             }
@@ -401,7 +363,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
          */
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            // writeToLog("getting required permissions");
             requestPermissions(REQUIRED_PERMISSIONS, 1);
         }
 
@@ -411,7 +372,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
          */
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!bluetoothAdapter.isEnabled()) {
-            //writeToLog("Prompting users to turn on bluetooth");
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, 1);
         }
@@ -437,8 +397,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         String versionName = BuildConfig.VERSION_NAME;
         logFunction_watch.information("Watch", "Version number of the watch app: " + versionName);
         logFunction_watch.information("Watch", "Build version of the watch: " + Build.VERSION.SDK_INT);
-        /*System.out.println("Position of the button: " + WearableButtons.getButtonLabel(applicationContext, KeyEvent.KEYCODE_BACK));
-        logFunction_watch.information("WatchButton", "Position of the button: " + WearableButtons.getButtonLabel(applicationContext, KeyEvent.KEYCODE_STEM_PRIMARY));*/
         isToastShown = false;
 
         int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
@@ -462,7 +420,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
             public void run() {
                 LocalDateTime currentTime = LocalDateTime.now();
                 long hoursPassed = Duration.between(recordingStartTime, currentTime).toHours();
-                //long timeDiff = (System.currentTimeMillis()-recordingStartTime)/(60*60*1000);
                 Log.d("Callback", "Manually check the time diff when the recording started: " + hoursPassed);
 
                 logFunction_watch.information("TimeHandler", "Manually check the time diff when the recording started: " + hoursPassed + " hour");
@@ -499,25 +456,7 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
 
                         serviceIntent.setAction(MSG_UPLOAD);
                         startService(serviceIntent);
-                        /*new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                while (filesFailedUpload != 0) {
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            filesFailedUpload = logFunction_watch.failedToUpload();
-                                            storageFile_number.setText(String.valueOf(filesFailedUpload));
-                                        }
-                                    });
-                                    try {
-                                        Thread.sleep(1000); // Update every minute
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }
-                        }).start();*/
+
                     }
                 }
 
@@ -527,16 +466,12 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         recordButtonOnClickListener = v -> {
             if (recordButtonStatus.equals("off")) {
                 isStartWatchButtonClicked = true;
-                //System.out.println("Checking if phone app is on!");
                 sendMessageToMobile("/phone_status_check_for_recording", "status", "is_on?");
-                /*LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH-mm-ss");*/
                 logFunction_watch.information("User","Press the start recording");
                 recordingStartTime = LocalDateTime.now();
                 Log.d("TimeHandler", "Recording starts: " + recordingStartTime);
                 logFunction_watch.information("Time","Recording starts: " + recordingStartTime + " ms");
                 logFunction_watch.information("Watch","Send a message to the mobile: 'Is the phone app on for start recording'");
-
                 // Start the timeout timer
                 startRecordingTimeoutHandler.postDelayed(startRecordingTimeoutRunnable, TIMEOUT_DURATION_MS);
 
@@ -544,6 +479,7 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         };
         recordButtonOnLongClickListener = v -> {
             if (recordButtonStatus.equals("on")) {
+                isRecordingStarted = false;
                 isSendFileClicked = false;
                 System.out.println("isSendFileClicked: " + isSendFileClicked);
                 stopRecording();
@@ -579,14 +515,12 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         putDataTask.addOnSuccessListener(new OnSuccessListener<DataItem>() {
             @Override
             public void onSuccess(DataItem dataItem) {
-                //System.out.println("Data Sent Successfully! :)" + key + " " + message);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
                 logFunction_watch.error("Watch", "Data Sent Failed! :(" + key + " " + message);
                 logFunction_watch.error("Watch", "Reason for failure of data send: " + e.toString());
-                //System.out.println("Data Sent Failed! :(");
             }
         });
     }
@@ -606,11 +540,8 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         Conditional check is required to ensure no duplicate requests are processed.
          */
         if (recordButtonStatus.equals("off")) {
-            //System.out.println("Recording!");
-            //writeToLog("Recording");
-//            phoneAppStatus = "on";
+
             recordButtonStatus = "on";
-//            mNotificationManager.notify(1, mNotification);
             AppState = 1;
             isRecordingStarted = true;
 
@@ -633,7 +564,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
             // Sets text indicating that recording stared.
             watchRecordButtonID.setText("Stop Watch Recording");
             watchRecordButtonID.setAlpha(1.0f);
-            //recordEndHandler.postDelayed(recordEndTimeoutRunnable,60*60*1000);
         }
     }
 
@@ -643,8 +573,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
          */
         if (recordButtonStatus.equals("on")) {
             recordButtonStatus = "off";
-            //System.out.println("In stop recording");
-            //writeToLog("In stop recording");
 
             //Sets red color indicating that recording is stopped.
             watchRecordButtonID.setBackgroundColor(Color.parseColor("#FF0000"));
@@ -669,11 +597,7 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         }
     }
 
-   /* int filesOnWatch() {
-        File directory = getExternalFilesDir(null);
-        File[] files = directory.listFiles();
-        return (files.length);
-    }*/
+
 
     public void switchView(final int desired_view) {
         currentView = desired_view;
@@ -698,20 +622,19 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
         System.out.println("in on data changed of watch!");
-        //writeToLog("in on data changed of watch!");
         for (DataEvent event : dataEvents) {
             if (event.getType() == DataEvent.TYPE_CHANGED) {
                 // DataItem changed
                 DataItem item = event.getDataItem();
                 DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
                 if (item.getUri().getPath().compareTo("/app_status") == 0) {
-                    System.out.println("in wearos_app ");
                     if (dataMap.getString("state").equals("stop")) {
-                        logFunction_watch.information("Mobile","Got the message to stop this app");
-                        Intent closingIntent = new Intent("com.example.ACTION_FINISH_ACTIVITY");
-                        sendBroadcast(closingIntent);
-                        //finishAndRemoveTask();
-                        //finishAffinity();
+                        if(recordButtonStatus.equals("off")){
+                            logFunction_watch.information("Mobile","Got the message to stop this app");
+                            Intent closingIntent = new Intent("com.example.ACTION_FINISH_ACTIVITY");
+                            sendBroadcast(closingIntent);
+                        }
+
                     }
                 }
                 if (item.getUri().getPath().compareTo("/wearos_app") == 0) {
@@ -721,14 +644,12 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
                         logFunction_watch.information("Mobile","Got the message to start recording");
                         startRecording();
                     } else if (dataMap.getString("record").equals("off")) {
-                        //System.out.println("in recording off");
-                        //writeToLog("Got msg to stop recording");
+
                         stopRecording();
                     }
                 }
                 if (item.getUri().getPath().compareTo("/phone_status_for_recording") == 0) {
                     if (dataMap.getString("status").equals("on")) {
-                        //System.out.println("Phone app is started!");
                         phoneAppStatus = "on";
 
                         logFunction_watch.information("Mobile","Response of the phone: 'Phone app is On'");
@@ -745,27 +666,17 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
 
                             logFunction_watch.information("Watch","The recording started at the watch");
 
-                            //writeToLog("Sending msg to phone to start recording");
                             sendMessageToMobile("/record_button_status", "record", "on");
-                            // LocalDateTime now = LocalDateTime.now();
-                            // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH-mm-ss");
                             logFunction_watch.information("Watch","Send a message to the mobile: 'Watch recording is started'" );
 
-
-                            // Hide the ProgressBar when you receive a response from the phone app or when the timeout occurs
-                            // progressBar.setVisibility(View.GONE);
-                            // textViewProgressMessage.setVisibility(View.GONE);
                         }
                     } else if (dataMap.getString("status").equals("off")) {
-                        //System.out.println("Phone app is closed!");
                         logFunction_watch.information("Mobile","Response from the phone: 'Phone app is closed'");
                         phoneAppStatus = "off";
                     }
                 }
                 if (item.getUri().getPath().compareTo("/phone_status_for_uploading") == 0) {
                     if (dataMap.getString("status").equals("on")) {
-                        //System.out.println("Phone app is started for uploading!");
-                        //writeToLog("Got msg that phone app is started");
                         phoneAppStatus = "on";
                         logFunction_watch.information("Mobile","Response of the phone: 'phone app is On' for uploading the files.");
 
@@ -773,7 +684,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
                         uploadFilesTimeoutHandler.removeCallbacks(uploadFilesTimeoutRunnable);
                         if (shouldStartUploading) { //11:27
                             shouldStartUploading = false;
-                            //writeToLog("Sending msg to upload to Stay Awake service as phone is available");
                             logFunction_watch.information("Watch","Sending msg to upload to Stay Awake service as phone is available.");
                             delay = false;
                             StayAwake.sessionFinished = true;
@@ -801,17 +711,13 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
                     logFunction_watch.information("Mobile","Response from the phone: 'phone app received a file: '" + prevFileName);
 
                     if (prevFile.exists()) {
-                        //System.out.println("Prev file exists = " + prevFileName);
                         if (!prevFileName.endsWith(".txt")) {
                             if (prevFile.delete()) {
-                                //System.out.println("Successfully deleted prev file with name = " + prevFileName);
-                                //writeToLog("Successfully deleted prev file with name = " + prevFileName);
                             }
                         }
                     }
 
                     int numOfFile = Integer.parseInt(value.split(" ")[0]);
-                    //writeToLog("Got msg from phone to send another file");
                     logFunction_watch.information("Mobile","Response from the phone: 'Send another file'");
 
                     StayAwake.uploadFilesToPhone(getExternalFilesDir(null), dataClient,
@@ -826,21 +732,16 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
         logFunction_watch.information("Activity", "onResume()");
         super.onResume();
         System.out.println("in onResume() of watch");
-        //logFunction_watch.information("Watch","in onResume() of watch");
     }
 
     @Override
     public void onBackPressed() {
-        //System.out.println("on back button pressed in watch app");
-        // writeToLog("on back button pressed in watch app");
     }
 
     @Override
     public void onPause() {
         logFunction_watch.information("Activity", "onPause()");
         super.onPause();
-        //System.out.println("in onPause of watch and is service is running " + foregroundServiceRunning());
-        //logFunction_watch.information("Watch","in onPause of watch and is service is running " + foregroundServiceRunning());
     }
 
     public boolean foregroundServiceRunning() {
@@ -870,37 +771,6 @@ public class MainActivity_new extends AppCompatActivity implements DataClient.On
     public void onDestroy() {
 
         System.out.println("In destroy() of watch");
-        //logFunction_watch.information("Watch","In destroy() of watch");
-        /*logFunction_watch.information("Activity", "onDestroy()");
-
-        if(isRecordingFinished){
-            logFunction_watch.information("Watch", "App closed normally");
-        }else {
-            logFunction_watch.error("Watch", "App is crashed");
-        }
-
-        filesFailedUpload = logFunction_watch.failedToUpload();
-        // System.out.println("Number of files failed to upload: " + "On Destroy: " + filesFailedUpload);
-        SharedPreferences.Editor mEditor = sharedPreference.edit();
-        mEditor.putInt("failed_upload", filesFailedUpload);
-        mEditor.apply();
-
-        StayAwake.notificationManager.cancel(1);
-        recordButtonStatus = "off";
-        unregisterReceiver(broadcastReceiver);
-        unregisterReceiver(batteryLevelReceiver);
-        stopService(serviceIntent);
-        // Remove the timeout callback when the activity is destroyed
-        startRecordingTimeoutHandler.removeCallbacks(startRecordingTimeoutRunnable);
-        uploadFilesTimeoutHandler.removeCallbacks(uploadFilesTimeoutRunnable);
-
-        // 9:43 9:59
-        // Informing mobile app that watch app is stopped.
-        sendMessageToMobile("/watch_app_status", "app", "stopped");
-
-        logFunction_watch.information("Watch","Send a message to the mobile: 'Watch app is destroyed'");*/
-
-
         logFunction_watch.closeFile();
 
         super.onDestroy();

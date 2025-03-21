@@ -90,18 +90,15 @@ public class Classifier {
 
     public void init() {
         logFunction_watch = new LogFunction_Watch();
-        //MainActivity_new.writeToLog("In the init method of the classifier class");
         /* get the localtime to use for filenames and events */
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
         String filePrefix = now.format(formatter) + "-watch";
-        //fileName = filePrefix;
 
         /* Should be checking that file opened successfully.
          ** If not, app will just crash with no feedback. */
         String csvFileName = "", binFileName = "";
         if (SAVE_FILE_FORMAT == 0) {
-//            fileName = "storage/emulated/0/Android/data/research.calorycheck/files/" + filePrefix + ".anw";
             binFileName = "storage/emulated/0/Android/data/research.mealwatcher/files/" + filePrefix + ".data";
             logFunction_watch.information("Watch","Created binary file with name = " + filePrefix + ".data");
             fileName = filePrefix + ".data";
@@ -119,7 +116,6 @@ public class Classifier {
             }
             fpte = new BufferedWriter(new FileWriter("storage/emulated/0/Android/data/research.mealwatcher/files/" + filePrefix + "-events.txt"));
 
-            //MainActivity_new.writeToLog("Opened streams for the files");
             fpte.write("START " + now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
             fpte.newLine();
             fpte.flush();
@@ -129,7 +125,6 @@ public class Classifier {
     }
 
     public void newData(float[] sensor_reading, long timestamp) {
-        //MainActivity_new.writeToLog("Got new data");
         long timeStampSystem = System.currentTimeMillis();
         byte[] SavePacket;
         ByteBuffer Convert;
@@ -159,7 +154,6 @@ public class Classifier {
             Convert.get(SavePacket, offset, length);
             offset = offset + 4;
         }
-//        System.out.println("offset = " + offset + " length = " + length);
         // Writing timestamp.
         Convert = (ByteBuffer) ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(timestamp).rewind();
         Convert.get(SavePacket, offset, length+4);
@@ -167,13 +161,11 @@ public class Classifier {
         Convert = (ByteBuffer) ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(timeStampSystem).rewind();
         Convert.get(SavePacket, 72, 8);
 
-        //MainActivity_new.writeToLog("saved the sensor data to SavePacket");
 
         try {
             if (SAVE_FILE_FORMAT == 0) {
                 bufferedOutputStream.write(SavePacket, 0, MAX_SIZE);
                 bufferedOutputStream.flush();
-            //    MainActivity_new.writeToLog("byte data written to file");
             } else {
                 /*
                 Writing to a text file with comma separated format.
@@ -192,7 +184,6 @@ public class Classifier {
 
                 fptw.write(String.valueOf(currentTimeInEST.toLocalTime()));
                 fptw.newLine();
-                //MainActivity_new.writeToLog("data written to csv file");
                 fptw.flush();
             }
         } catch (IOException e) {
@@ -208,7 +199,6 @@ public class Classifier {
         LocalDateTime now = LocalDateTime.now();
         fpte.write("END " + now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         fpte.newLine();
-       // MainActivity_new.writeToLog("Closing the classifier");
         try {
             /* file pointer writing live sensor data to file */
             if(SAVE_FILE_FORMAT == 0) {
@@ -220,13 +210,11 @@ public class Classifier {
                 bufferedOutputStream.close();
 
                 logFunction_watch.information("File", "Closed the bufferedOutputStream");
-                //System.out.println("Closed the buffered output stream");
             } else {
                 fptw.flush();
                 fptw.close();
                 logFunction_watch.information("File","Closed the csv file pointers");
             }
-//            fpte.flush();
             fpte.close();
         } catch (IOException e) {
             e.printStackTrace();

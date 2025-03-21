@@ -9,8 +9,8 @@ android {
         applicationId "research.mealwatcher"
         minSdk 26 // minimum version of android os required to run the application. Android version - 11
         targetSdk 34 // The target sdk version is the version of Android that your app was created to run on. If you do not specify the targetSdkVersion, it defaults to the minSdkVersion.
-        versionCode 1320000 // Number used for play store purpose.
-        versionName "1.3.2 B00 (Phone)" // Tracking for our purpose.
+        versionCode 1330000 // Number used for play store purpose.
+        versionName "1.3.3 B00 (Phone)" // Tracking for our purpose.
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

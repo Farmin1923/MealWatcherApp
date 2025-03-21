@@ -152,7 +152,6 @@ public class LogFunction {
             }
 
             else {
-                //System.out.println("File in the failed section: " + files[i].getName());
                 filesFailedUpload++; // let user know if any uploads fail
             }
         }

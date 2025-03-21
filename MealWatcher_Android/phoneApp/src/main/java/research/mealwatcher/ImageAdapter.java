@@ -54,7 +54,6 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     @Override
     public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
         File imageFile = imageFiles.get((imageFiles.size()-position)-1);
-        //System.out.println("RecyclerView Position: " + position + " File: " + imageFile.getName());
 
         // Use Glide to load images into ImageView
         Glide.with(context)

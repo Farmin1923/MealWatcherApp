@@ -125,7 +125,6 @@ public class LogFunction_Watch {
         // Check if renaming was successful
         if (renamed) {
             logFile = new File(applicationContext.getExternalFilesDir(null), fileName);
-           // logFileName = fileName;
         } else {
             error("File", "Failed to rename the file.");
         }
@@ -140,21 +139,13 @@ public class LogFunction_Watch {
         File[] files = applicationContext.getExternalFilesDir(null).listFiles();
 
         for (int i = 0; i < files.length; i++) {
-            /*if (files[i].getName().endsWith(".txt")) {
-                continue; // skip this file
-            }else {
-                filesFailedUpload++; // let user know if any uploads fail
-            }*/
-
 
             if(files[i].getName().endsWith(".data")){
                 information("Watch","Named of the file failed to upload: "+ files[i].getName());
-                //System.out.println("Named of the file failed to upload: "+ files[i].getName());
                 filesFailedUpload++ ; // skip this file
             }
 
         }
-        //System.out.println("Number of files failed to upload: " + filesFailedUpload);
         return filesFailedUpload;
     }
 }

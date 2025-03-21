@@ -101,7 +101,6 @@ import org.json.JSONObject;
 
 public class ControlWatch extends IntentService implements DataClient.OnDataChangedListener {
     private static boolean watchAppStatus; /*To ensure watch app is not restarted if it is already started.*/
-    private static boolean watchAppIsOn = false; /*To ensure watch app is still running.*/
     static boolean isDuplicateWatchFileAck = false; /* This variable is to ensure if the phone doesn't receive duplicate acknowledgements from watch. */
     private RemoteActivityHelper remoteActivityHelper;
     static final String record_on_msg = "ON";
@@ -127,8 +126,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
     static private String dropBoxAccessToken = null;
     static Thread uploadToDropboxThread;
     static private ConnectivityManager connectivityManager;
-    static ChannelClient channelClient;
-    static ChannelClient.Channel globalChannel;
     static String dropboxFolder;
     static String folderName;
     static int filesFailedUpload = 0;
@@ -151,7 +148,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
         directory = getExternalFilesDir(null);
         logFunction = new LogFunction();
 
-        //MainActivity.writeToLog("in onCreate of watch service");
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if (activityManager != null) {
             for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
@@ -179,7 +175,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
         notificationManager.createNotificationChannel(notificationChannel);
 
         Intent intent = new Intent(this, ControlWatch.class);
-        //intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         notification = new Notification.Builder(ControlWatch.this,
                 "calorie_check_notification_channel")
@@ -195,7 +190,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
             public void run() {
                 watchAppStatus = false;
                 // Informing user that connection to watch couldn't be established.
-                //Toast.makeText(ControlWatch.this, "Couldn't connect to watch, please try again!", Toast.LENGTH_LONG).show();
                 showToast(ControlWatch.this, "Couldn't connect to watch, please try again!", 1);
                 LocalDateTime now = LocalDateTime.now();
             }
@@ -214,10 +208,8 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //System.out.println("in handling intent");
         boolean isStickyOn = true;
         if (intent != null) {
-            //MainActivity.writeToLog("Got the intent = " + intent.getAction());
             final String action = intent.getAction();
             logFunction.information("Watch_MT", "Current action is executing: " + action);
             if (Objects.nonNull(action)) {
@@ -229,19 +221,13 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                         File[] files = directory.listFiles();
                         if (Objects.nonNull(files) && files.length > 0) {
                             System.out.println("Files exist to upload");
-                            //System.out.println("State of thread is " + uploadToDropboxThread.getState());
                             Log.d("DropBoxUpload", "State of the thread: " + uploadToDropboxThread.getState());
-
-                            //MainActivity.writeToLog("Starting the dropbox upload thread.");
-                            //LocalDateTime now = LocalDateTime.now();
-                            //MainActivity.writeToLogTime("Uploading the remaining files to Dropbox at the beginning at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
 
                             if (uploadToDropboxThread.getState() == Thread.State.NEW) {
                                // MainActivity.writeToLog("Upload thread started!");
                                 uploadToDropboxThread.start();
                             } else if (uploadToDropboxThread.getState() == Thread.State.TERMINATED) {
                                 uploadToDropboxThread = new Thread(new DropboxUploadRunnable());
-                                //MainActivity.writeToLog("Upload thread started!");
                                 uploadToDropboxThread.start();
                             }
                         }
@@ -257,20 +243,15 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
 
                         // Remove this service from foreground state and remove the notification from
                         // notification bar.
-                        //stopForeground(STOP_FOREGROUND_REMOVE);
                         if (wakeLock.isHeld()) {
                             wakeLock.release();
                         }
 
-                       // System.out.println("service foreground? after recording off = " + MainActivity.isServiceRunningInForeground(this, ControlWatch.class));
                         break;
                     case "Stop_Foreground":
-                        //MainActivity.writeToLog("Stopping the foreground watch service");
                         isStickyOn = false;
-                        //stopForeground(STOP_FOREGROUND_REMOVE);
                         break;
                     case "inform_watch_about_ring":
-                       // MainActivity.writeToLog("Informing watch about ring status");
                         sendDataItem(intent.getStringExtra("path"), intent.getStringExtra("key"), intent.getStringExtra("value"));
                         break;
                 }
@@ -323,7 +304,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
 
                         public void onFailure(@NonNull Throwable thrown) {
                             System.out.println("Failed to send the intent!");
-                            //logFunction.information("Watch","Failed to send the intent!. Reason: " + thrown.toString());
                             thrown.printStackTrace();
                         }
                     },
@@ -334,7 +314,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
 
     static void sendDataItem(String path, String key, String message) {
         System.out.println("Sending data item!");
-        //MainActivity.writeToLog("Sending data item to watch!");
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create(path);
         putDataMapReq.getDataMap().putString(key, message);
         putDataMapReq.getDataMap().putLong("timestamp", System.currentTimeMillis());
@@ -342,7 +321,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
         putDataTask.addOnSuccessListener(new OnSuccessListener<DataItem>() {
             @Override
             public void onSuccess(DataItem dataItem) {
-                //System.out.println("Data Sent Successfully! :)" + key);
                 logFunction.information("Watch", "Data Sent Successfully to the watch!. Key: " + key);
             }
         }).addOnFailureListener(new OnFailureListener() {
@@ -362,7 +340,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
     @Override
     public void onDataChanged(@NonNull DataEventBuffer dataEvents) {
         System.out.println("in on data changed in phone!");
-        //MainActivity.writeToLog("In onDataChanged of ControlWatch service!");
         for (DataEvent event : dataEvents) {
             if (event.getType() == DataEvent.TYPE_CHANGED) {
                 // DataItem changed
@@ -374,9 +351,7 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                  */
                 if (item.getUri().getPath().compareTo("/record_button_status") == 0) {
                     if (dataMap.getString("record").equals("on")) {
-                        //System.out.println("isFileTransferDone = " + isFileTransferDone);
-                        //MainActivity.writeToLog("Record button state on!");
-                        //System.out.println("RecordButtonState after watch starts recording initial = " + MainActivity.watchRecordStatus);
+
                         MainActivity.watchRecordStatus = "true";
                         MainActivity.watchRecordStarted = true ;
                         LocalDateTime now = LocalDateTime.now();
@@ -391,26 +366,22 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                         MainActivity.takeSurvey.setChecked(false);
                         MainActivity.prePictureTaken = "false";
                         MainActivity.postPictureTaken = "false";
-//                        MainActivity.startWatchSensors.setBackground(R.drawable.checked_background);
 
                         MainActivity.setButtonText(MainActivity.watchRecordButton, record_on_msg);
                         // Setting green color indicating the recording started.
                         MainActivity.setButtonColor(MainActivity.watchRecordButton,
                                 Color.parseColor("#008000"));
 
-                        //MainActivity.writeToLogTime("Watch sensor is started from watch at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
 
                         displayNotification();
                         isDuplicateWatchFileAck = false;
 
-                        //checkOnWatchStatus();
 
                         // Start this service as a foreground service and also display the notification
                         // to user informing that recording is started.
                         //startForeground(42, notification);
                         wakeLock.acquire();
 
-                        //System.out.println("RecordButtonState after watch starts recording final = " + MainActivity.watchRecordStatus);
                     } else if (dataMap.getString("record").equals("off")) {
                         MainActivity.watchRecordStatus = "false";
                         MainActivity.setButtonText(MainActivity.watchRecordButton, record_off_msg);
@@ -424,15 +395,11 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                         MainActivity.isRecordingDone = true;
 
                         LocalDateTime now = LocalDateTime.now();
-                        //MainActivity.writeToLogTime("Watch sensor is closed from watch at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
                         logFunction.information("Watch","Got the message from the watch: 'watch sensor is closed'" );
 
                         // Cancel the display of the notification.
                         cancelNotification();
 
-                        // Remove this service from foreground state. This will remove the notification from notification bar.
-                        //stopForeground(STOP_FOREGROUND_REMOVE);
-                       // System.out.println("service foreground? after recording off = " + MainActivity.isServiceRunningInForeground(this, ControlWatch.class));
                         if (wakeLock.isHeld()) {
                             wakeLock.release();
                         }
@@ -442,16 +409,13 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                     // Execute the task on a separate thread
                     if (executor == null || executor.isShutdown()) {
                         executor = Executors.newCachedThreadPool();
-                        //System.out.println("Executor is initialized in onDataChange file_path");
                     }
                     executor.execute(() -> {
                         try {
-                           // MainActivity.writeToLog("before isDuplicateWatchFileAck = " + isDuplicateWatchFileAck);
-                            //MainActivity.writeToLog("Received the sensor file chunk from watch in the byte[] format");
+
                             Asset asset = dataMap.getAsset("sensors_file");
                             String fileNameReceived = dataMap.getString("fileName");
                             logFunction.information("Watch","Got a file from the watch named: " + fileNameReceived );
-                            //MainActivity.writeToLogSync("Got the file named: " + fileNameReceived);
 
                             String fileName = MainActivity.prev_pid_value + "-" + fileNameReceived;
                             int fileNumber = dataMap.getInt("numOfFiles");
@@ -471,12 +435,8 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                                 logFunction.error("Watch", "Got a file but can't write it in the phone storage.");
                             }
 
-                            //MainActivity.writeToLog("Sending msg to phone for sending another file");
                             sendDataItem("/another_recording_file", "send",
                                     (fileNumber - 1) + " " + fileNameReceived);
-
-                            //MainActivity.writeToLogSync("Send a message to the watch: 'Send another files' at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
-
 
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -489,13 +449,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                  */
                  if (item.getUri().getPath().compareTo("/watch_app_status") == 0) {
                     if (dataMap.getString("app").equals("started")) {
-                        //System.out.println("Watch app started!");
-                        //MainActivity.writeToLog("Got message form Watch app, that it is started successfully!");
-                        //System.out.println("watchAppStatus = " + watchAppStatus);
-                        //LocalDateTime now = LocalDateTime.now();
-                        //MainActivity.writeToLogTime("Watch app started in the watch at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
-
-                        //MainActivity.writeToLogSync("Got the message from the watch: 'Watch App is started' at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
 
                         /*
                         Note: We don't set the watchAppStatus to true here. Because when ever the
@@ -506,23 +459,14 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                         // is clicked.
                         if (watchAppStatus) {
                             isDuplicateWatchFileAck = false;
-                            //checkOnWatchStatus();
                         }
-//                        toggleButton.setChecked(true);
                     } else if (dataMap.getString("app").equals("stopped")) {
-                        //System.out.println("watch app is stopped");
                         logFunction.information("Watch","Watch app stopped");
-                        /*LocalDateTime now = LocalDateTime.now();
-                        MainActivity.writeToLogSync("Got a message from the watch:  'Watch app stopped at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
-*/
+
                         if (MainActivity.watchRecordStatus.equals("true")) {
-                            //MainActivity.informUser("Watch app is crashed, please start it again.");
-                            //mainActivity.showToast("Watch app is crashed, please start it again.",0);
+
                             showToast(getApplicationContext(), "Watch app is crashed, please start it again.", 0);
                             logFunction.error("Watch","Got the message from watch: 'Watch App is crashed'");
-
-                            //LocalDateTime now1 = LocalDateTime.now();
-                            //MainActivity.writeToLogTime("Watch app is crashed at: " + now1.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
 
                             MainActivity.startWatchSensors.setChecked(false);
                             MainActivity.stopWatchSensors.setChecked(true);
@@ -535,11 +479,8 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                 }
                 if (item.getUri().getPath().compareTo("/data_transfer_ack") == 0) {
                     if (dataMap.getString("all_files_sent").equals("yes")) {
-                        //System.out.println("Ack received!");
-                        //MainActivity.writeToLog("Data ack for all files sent from watch is received");
-                        //LocalDateTime now = LocalDateTime.now();
+
                         logFunction.information("Watch","All files sent from watch is received." );
-                        //MainActivity.writeToLogSync("Got the message from the watch: 'All the files are received' at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
                         // Maintaining this variable to ensure that user doesn't start the recording
                         // before all files are being transferred to phone from watch.
                         isFileTransferDone = "True";
@@ -548,22 +489,17 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                         if (MainActivity.watchRecordStatus.equals("false")) {
                             // Stops the application on the watch after all the sensor data files are saved on mobile.
                             sendDataItem("/app_status", "state", "stop");
-                            //LocalDateTime now1 = LocalDateTime.now();
-                            //MainActivity.writeToLogSync("Send the message to the watch: 'Stop the watch application as all files are saved' at: " + now1.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
 
                             executor.shutdown();
                         }
                         isDuplicateWatchFileAck = false;
 
-                        //MainActivity.writeToLog("isDuplicateWatchFileAck = " + isDuplicateWatchFileAck);
 
                         // Maintaining allWatchFilesReceived variable to avoid duplicates.
                         if (!isDuplicateWatchFileAck) {
                             System.out.println("Uploading to dropbox");
                             isDuplicateWatchFileAck = true;
-                            //MainActivity.writeToLog("Starting the dropbox upload thread as all the watch files have been received.");
-                            //LocalDateTime time_dropbox = LocalDateTime.now();
-                            //MainActivity.writeToLogTime("Dropbox upload is started at: " + time_dropbox.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
+
                             if (uploadToDropboxThread.getState() == Thread.State.NEW) {
                                 uploadToDropboxThread.start();
                                 logFunction.information("Watch_DB","Starting the dropbox upload thread as all the watch files have been received.");
@@ -576,45 +512,24 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                     }
                 }
                 if(item.getUri().getPath().compareTo("/previous_data_transfer_ack")==0){
-                    //LocalDateTime now = LocalDateTime.now();
-                    //MainActivity.writeToLogSync("Got all the previous session files from the watch at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
+
                     sendDataItem("/got_previous_files", "all_received","yes");
-                    //MainActivity.writeToLogSync("Send the message to the watch app: 'Get all the previous files' at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
 
                 }
                 if (item.getUri().getPath().compareTo("/phone_status_check_for_recording") == 0) {
                     if (dataMap.getString("status").equals("is_on?")) {
-                        //MainActivity.writeToLog("informing watch that phone app is running");
-                        //LocalDateTime now = LocalDateTime.now();
+
                         logFunction.information("Watch","Got a message from the watch: ' Is the phone app On for start recording'");
 
                         sendDataItem("/phone_status_for_recording", "status", "on");
                         logFunction.information("Watch","Send the message to the watch app:  'Phone app is on for start the recording'");
-                        //System.out.println("sent that phone app is started.");
-                        //LocalDateTime now = LocalDateTime.now();
-                        //MainActivity.writeToLogTime("Sent the acknowledgement to the watch that phone app is running at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
-//                        if (executor == null || executor.isShutdown()) {
-//                            executor = Executors.newCachedThreadPool();
-//                            System.out.println("Executor is initialized in onDataChange file_path");
-//                        }
+
                     }
                 }
                 if(item.getUri().getPath().compareTo("/phone_status_check_for_upload") == 0) {
                     if (dataMap.getString("status").equals("is_on?")) {
-                       // MainActivity.writeToLog("informing watch that phone app is running");
-                        //LocalDateTime now = LocalDateTime.now();
-                        //MainActivity.writeToLogSync("Got a message from the watch: 'Is the phone app is On for sending files' at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
-
                         sendDataItem("/phone_status_for_uploading", "status", "on");
-                        //System.out.println("sent that phone app is running for uploading");
-                        //MainActivity.writeToLogSync("Send the message to the watch: 'It is on for sending files' at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
 
-                        //LocalDateTime now = LocalDateTime.now();
-                        //MainActivity.writeToLogTime("Sent the acknowledgement to the watch that phone app is running at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
-//                        if (executor == null || executor.isShutdown()) {
-//                            executor = Executors.newCachedThreadPool();
-//                            System.out.println("Executor is initialized in onDataChange file_path");
-//                        }
                     }
                 }
             }
@@ -633,66 +548,27 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
 
             return bos.toByteArray();
         } catch (IOException e) {
-            logFunction.error("Watch_Fil","Error: " + e.toString() + " decompressing data.");
+            logFunction.error("Watch_File","Error: " + e.toString() + " decompressing data.");
             return null;
         }
     }
 
-    /*public static int failedToUpload() {
-        filesFailedUpload = 0;
-        // get list of files and upload
-        File[] files = directory.listFiles();
-        //System.out.println("files len = " + files.length);
 
-        boolean filesExist = false;
-        if (files.length > 0) {
-            filesExist = true;
-        }
-
-        // MainActivity.fileCount = files.length - 1; // how many to upload (-1 to exclude auth file)
-        for (int i = 0; i < files.length; i++) {
-            if (files[i].getName().equals("authfile.json") || files[i].getName().endsWith(".txt")) {
-                System.out.println("File name which continued: " + files[i].getName());
-                continue;       // skip this file
-            }
-            if (MainActivity.ringRecordingState.equals("true") && files[i].getName().contains("ring.data")) {
-                System.out.print("skipping the rile file.");
-                continue;      // skip uploading of ring file when upload starts at application start.
-            }
-            *//*if(files[i].getName().equals(MainActivity.logSyncFileName) || files[i].getName().equals(MainActivity.logFileName) || files[i].getName().equals(MainActivity.logTimeFileName)){
-                System.out.println("Skipping the current session's log files"); //skipping uploading current session's log files as this will be closed in OnDestroy step
-                continue;
-            }*//*
-            if(files[i].getName().endsWith(".log")){
-                System.out.println("Skipping the log files in the failed upload section"); //skipping uploading current session's log files as this will be closed in OnDestroy step
-                continue;
-            }
-            else {
-                System.out.println("File in the failed section: " + files[i].getName());
-                filesFailedUpload++; // let user know if any uploads fail
-            }
-        }
-        return filesFailedUpload;
-    }*/
 
     private static void startUploading() {
-        //System.out.println("Starting the uploading");
-        //MainActivity.writeToLog("Starting dropbox upload!");
-        // write out authentication file so we can attach it for dropbox upload
+
         writeAuthFile(getAccessToken());
 
         String rootDirectoryPath = MainActivity.applicationContext.getExternalFilesDir(null).getPath();
         String argAuthFile = rootDirectoryPath + "/authfile.json";
         // read auth info file.
         DbxAuthInfo authInfo = null;
-       // MainActivity.writeToLog("Reading auth file");
         try {
             authInfo = DbxAuthInfo.Reader.readFromFile(argAuthFile);
         } catch (JsonReader.FileLoadException ex) {
             ex.printStackTrace();
         }
 
-       // MainActivity.writeToLog("Creating the DbxClient");
         // Create a DbxClientV2, which is what you use to make dropbox API calls.
         // Below client identifier which we give to DBXRequestConfig is the Dropbox-API app name.
         DbxRequestConfig requestConfig = new DbxRequestConfig("CaloryChecker");
@@ -707,7 +583,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
         }
 
         if (MainActivity.prev_location_value.equals("South Carolina")) {
-            //dropboxFolder = "/WATCH/Clemson/" + files[i].getName().substring(0, 4);
             dropboxFolder = "/WATCH/Clemson/" + folderName;
         } else if (MainActivity.prev_location_value.equals("Rhode Island")) {
             dropboxFolder = "/WATCH/Brown/" + folderName;
@@ -716,40 +591,31 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
         }else if (MainActivity.prev_location_value.equals("Developer")) {
             dropboxFolder = "/WATCH/Developer/" + folderName;
         }
-        //dropboxFolder = "/WATCH/" + folderName;
 
-        System.out.println("Targeted folder to upload: " + dropboxFolder);
         logFunction.information("Dropbox","Creating directory for participant with folder name "
                 + dropboxFolder);
         try {
             Files.createDirectories(Paths.get(dropboxFolder));
         } catch (Exception e) {
             e.printStackTrace();
-            //logFunction.error("Dropbox", "Error: " + e.toString() + " creating directory for the participant");
         }
         // get list of files and upload
         File[] files = directory.listFiles();
-       // System.out.println("files len = " + files.length);
 
         boolean filesExist = false;
         if (files.length > 0) {
             filesExist = true;
-//            MainActivity.textViewProgressMessage.setText("Uploading files...");
         }
-        //System.out.println("filesExist = " + filesExist);
 
-        // MainActivity.fileCount = files.length - 1; // how many to upload (-1 to exclude auth file)
         for (int i = 0; i < files.length; i++) {
             if (files[i].getName().equals("authfile.json") || files[i].getName().endsWith(".txt")) {
                 continue;       // skip this file
             }
             if (MainActivity.ringRecordingState.equals("true") && files[i].getName().contains("ring.data")) {
-               // System.out.print("skipping the ring file.");
                 continue;      // skip uploading of ring file when upload starts at application start.
             }
             if (files[i].getName().equals(MainActivity.currentLogFileName)) {
                 System.out.println("skipping the current session log file");
-                //System.out.println("Log file name in the currentLogFile: " + files[i].getName());
 
                 continue;
             }
@@ -760,24 +626,16 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
             Log.d("DropBoxUpload", "File to upload: " +files[i].getName());
 
             String localPath = rootDirectoryPath + "/" + files[i].getName();
-            //System.out.println("local path = " + localPath);
             File localFile = new File(localPath);
-            //System.out.println("localFile = " + localFile.getName());
 
             String dropboxPath = dropboxFolder + "/" + files[i].getName();
 
-            //System.out.println("dropbox path = " + dropboxPath);
             //upload the file
             FileMetadata returnMetadata = uploadToDropBox(dbxClient, localFile, dropboxPath);
             if (Objects.nonNull(returnMetadata) && returnMetadata.getSize() == localFile.length()) {
-                //LocalDateTime now = LocalDateTime.now();
-                //System.out.println("File " + files[i].getName() + " uploaded successfully.");
+
                 logFunction.information("Dropbox", "File " + files[i].getName() + " uploaded successfully.");
-                //MainActivity.writeToLogTime("File " + files[i].getName() + " uploaded successfully at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")) );
-                // delete file from phone storage
-                /*if (!files[i].getName().endsWith(".jpg")) {
-                    localFile.delete();
-                }*/
+
                 if(MainActivity.newImageFolder.exists()){
                     localFile.delete();
                 }else{
@@ -787,14 +645,11 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                 }
 
 
-                // MainActivity.fileCount--;
             } else {
                 filesFailedUpload++;
             }
-            //MainActivity.textTop.setText(MainActivity.fileCount + "");
-            //MainActivity.textBottom.setText(filesFailedUpload + "");
+
         }
-        //System.out.println("Files failed to upload = " + filesFailedUpload);
         logFunction.information("Dropbox", "Files failed to upload = " + filesFailedUpload);
 
         MainActivity.failedUpload = filesFailedUpload;
@@ -804,7 +659,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
     }
 
     private static String getAccessToken() {
-        //MainActivity.writeToLog("Getting access token");
         // If already fetched access token is not expired, then use the same access token.
         if (Objects.nonNull(dropBoxAccessToken) && !isExpired(dropBoxAccessToken)) {
             return dropBoxAccessToken;
@@ -816,7 +670,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
         String clientSecret = token.getClientSecret();
 
 //        String command = "curl https://api.dropbox.com/oauth2/token -d refresh_token=" + refreshToken + " -d grant_type=refresh_token -d client_id=" + clientId + " -d client_secret=" + clientSecret;
-       // System.out.println("Getting the access token");
         try {
             URL url = new URL("https://api.dropbox.com/oauth2/token");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -841,24 +694,20 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                 }
                 reader.close();
             } else {
-              //  System.out.println("HTTP request failed with response code: " + responseCode);
                 logFunction.error("Dropbox","HTTP request failed with response code: " + responseCode);
             }
 
             connection.disconnect();
         } catch (Exception exception) {
-           // System.out.println("Got the exception");
             logFunction.error("Dropbox", "Got exception " + exception);
             exception.printStackTrace();
         }
 
-        //System.out.println("Access token = " + dropBoxAccessToken);
-        //MainActivity.writeToLog("Got the access token = " + dropBoxAccessToken);
+
         return dropBoxAccessToken;
     }
 
     private static boolean isExpired(String dropBoxAccessToken) {
-        //MainActivity.writeToLog("Checking if dropbox access token is expired or not");
         try {
             URL url = new URL("https://api.dropboxapi.com/2/users/get_current_account");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -877,7 +726,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
     }
 
     private static String encodeParameters(Map<String, String> params) {
-       // MainActivity.writeToLog("Encoding parameters");
         StringBuilder result = new StringBuilder();
         for (Map.Entry<String, String> entry : params.entrySet()) {
             if (result.length() > 0) {
@@ -892,7 +740,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
 
 
     private static void writeAuthFile(String accessToken) {
-       // MainActivity.writeToLog("Writing access token to auth file");
         String rootDirectoryPath = MainActivity.applicationContext.getExternalFilesDir(null).getPath();
         String argAuthFile = rootDirectoryPath + "/authfile.json";
         try {
@@ -906,7 +753,6 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
     }
 
     private static FileMetadata uploadToDropBox(DbxClientV2 dbxClient, File localFile, String dropboxPath) {
-       // MainActivity.writeToLog("Performing upload call on DbxClient");
         FileMetadata metadata = null;
         try (InputStream in = new FileInputStream(localFile)) {
             metadata = dbxClient.files().uploadBuilder(dropboxPath)
@@ -914,57 +760,32 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                     .withClientModified(new Date(localFile.lastModified()))
                     .uploadAndFinish(in);
         } catch (DbxException | IOException ex) {
-            //logFunction.error("Dropbox", "Got exception in uploadToDropbox = " + ex);
-            //System.out.println("Exception in uploadToDropbox = ");
+
             ex.printStackTrace();
         }
         return metadata;
     }
 
     static void displayNotification() {
-        //MainActivity.writeToLog("Displaying notification");
         notificationManager.notify(notificationID, notification);
     }
 
     static void cancelNotification() {
-       // MainActivity.writeToLog("cancelling notification");
         notificationManager.cancel(notificationID);
     }
 
-    /*public static class DropboxUploadRunnable implements Runnable {
-        public void run() {
-            if (connectivityManager != null) {
-                filesFailedUpload = 0;
-                System.out.println("Connected to wifi so starting uploading.");
-                NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-                if (networkInfo != null && networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
 
-                    System.out.println("Connected to wifi so starting uploading.");
-                    MainActivity.writeToLog("Connected to wifi so started uploading.");
-                    LocalDateTime now = LocalDateTime.now();
-                    MainActivity.writeToLogTime("Connected to wifi and start uploading at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
-                    startUploading(); // Connected to Wi-Fi
-                } else {
-                    MainActivity.failedUpload = failedToUpload();
-                }
-            }
-        }
-    }*/
     public static class DropboxUploadRunnable implements Runnable {
         public void run() {
             if (connectivityManager != null) {
                 filesFailedUpload = 0;
-               // System.out.println("Connected to wifi so starting uploading.");
                 NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
                 if (networkInfo != null) {
                     if(networkInfo.getType() == ConnectivityManager.TYPE_WIFI || networkInfo.getType()==ConnectivityManager.TYPE_MOBILE){
-                        //System.out.println("Connected to wifi or mobile net so starting uploading.");
                         logFunction.information("Dropbox", "Connected to wifi or mobile net so started uploading.");
-                        //LocalDateTime now = LocalDateTime.now();
-                        //MainActivity.writeToLogTime("Connected to wifi or mobile net and start uploading at: " + now.format(DateTimeFormatter.ofPattern("HH-mm-ss")));
+
                         if(uploadButton == "clicked"){
-                            //System.out.println("Upload started");
-                            //Toast.makeText(context.getApplicationContext(), "Please connect to an internet connection!", Toast.LENGTH_LONG).show();
+
                             new Handler(Looper.getMainLooper()).post(new Runnable() {
                                 @Override
                                 public void run() {
@@ -976,9 +797,7 @@ public class ControlWatch extends IntentService implements DataClient.OnDataChan
                     }
 
                 } else {
-                    //MainActivity.failedUpload = failedToUpload();
                     if(uploadButton == "clicked"){
-                        //System.out.println("Failed to connect internet");
                         uploadButton = "";
                         //This toast message will be shown only when the upload to Dropbox button in the settings is clicked
                         new Handler(Looper.getMainLooper()).post(new Runnable() {

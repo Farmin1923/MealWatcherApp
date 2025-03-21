@@ -99,7 +99,6 @@ public class ControlRing extends IntentService {
     public int b, i, j;
     public long ts;
     public long tsSystem;
-    public long previousts;
     private BluetoothPeripheralCallback peripheralCallback;
     private BluetoothCentralManagerCallback bluetoothCentralManagerCallback;
 
@@ -107,12 +106,10 @@ public class ControlRing extends IntentService {
     private static TimerTask timerTask;
     public static boolean recordingStarted = false; //Sensor reading is started or not
 
-   // private int dataReceived;
 
     private MediaPlayer mediaPlayer;
     public ByteBuffer Convert;
     static int RingConnection = 0; /* 0 not connected, 1 connected.*/
-    static boolean connectedOnce = false; //
     private static BluetoothPeripheral RingPeripheral = null;
     static String ringSensorFile;
     // Handler to check the ring status
@@ -187,7 +184,6 @@ public class ControlRing extends IntentService {
         if(wakeLockRing.isHeld()){
             logFunction.information("Ring","WakeLock is acquired");
         }
-        //notificationManager.notify(2, mNotification);
         super.onCreate();
     }
 
@@ -200,9 +196,6 @@ public class ControlRing extends IntentService {
         // Initializing the Handler
         handler = new Handler();
 
-        /*mediaPlayer = MediaPlayer.create(this, R.raw.alarm);
-        mediaPlayer.setVolume(0.6f, 0.6f); // Set the volume to 60%
-*/
         if (intent != null) {
             final String action = intent.getAction();
             logFunction.information("Ring_MT", "Current action is executing: " + action);
@@ -212,29 +205,16 @@ public class ControlRing extends IntentService {
                 switch (action) {
                     case "start_service":
                         System.out.println("Ring service started!");
-                        /*displayNotification();
-                        startForeground(101, mNotification);
-                        logFunction.information("Ring_MT", "Notification channel created.");*/
 
                         break;
                     case "start_scanning_for_ring":
                         Log.d("BLuetooth","Ring number: " + MainActivity.prev_ring_id_value);
 
-
-                        //recordingStarted = false;
-                        //dataReceived = 0;
                         if(!recordingStarted){
                             // Register the channel with the system
                             displayNotification();
                             startForeground(101, mNotification);
-                            /*if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-                                //startForeground(101, mNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
-                                startForeground(101, mNotification);
 
-                            }else{
-                                startForeground(101, mNotification);
-
-                            }*/
                             logFunction.information("Ring_MT", "Notification channel created.");
                         }
                         peripheralCallback = new BluetoothPeripheralCallback() {
@@ -347,12 +327,6 @@ public class ControlRing extends IntentService {
                                             }
                                             ts += TimeOffset;  /* add 1970-Jan-1 offset to synchronize */
 
-                                            /*if(TotalDataReceived !=0){
-                                                if(ts-previousts !=10){
-                                                    logFunction.debug("Ring", "Ring time difference between the current and the previous sensor recording is not 10ms.");
-                                                }
-                                            }*/
-                                            //previousts = ts;
                                             Convert = (ByteBuffer) ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(ts).rewind();
                                             Convert.get(SavePacket, 64, 8);
 
@@ -430,7 +404,6 @@ public class ControlRing extends IntentService {
                                 }else{
                                     filePrefix = MainActivity.prev_pid_value + "-";
                                 }
-                                //String filePrefix = MainActivity.prev_pid_value + "-";
                                 final LocalDateTime now = LocalDateTime.now();
                                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
                                 logFunction.information("Ring_BT", "Connected to the ring." );
@@ -460,7 +433,6 @@ public class ControlRing extends IntentService {
                             public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
                                 /* stop scanning and connect if Wave ring found */
                                 String LogMessageText = "DiscoveredPeripheral " + peripheral.getName() + " " + peripheral.getAddress();
-                                //Log.d("RINGLOG", LogMessageText + "\n");
                                 if ((MainActivity.prev_ring_id_value > 0 &&
                                         peripheral.getAddress().equals(RingMACs[MainActivity.prev_ring_id_value]))) {
                                     logFunction.information("Ring_BT","Discovered the required ring: " + (MainActivity.prev_ring_id_value+1));
@@ -471,10 +443,7 @@ public class ControlRing extends IntentService {
                                         public void run() {
                                             logFunction.information("Ring_BT","Getting connected to the ring");
                                             central.connectPeripheral(peripheral, peripheralCallback);
-                                            /*wakeLockRing.acquire();
-                                            if(wakeLockRing.isHeld()){
-                                                logFunction.information("Ring","WakeLock is acquired");
-                                            }*/
+
                                         }
                                     }).start();
                                     WavePacketTotalBytes = 0;
@@ -485,9 +454,7 @@ public class ControlRing extends IntentService {
                             @Override
                             public void onDisconnectedPeripheral(@NotNull BluetoothPeripheral peripheral, @NotNull HciStatus status) {
                                 try {
-                                    /*if(wakeLockRing.isHeld()){
-                                        wakeLockRing.release();
-                                    }*/
+
                                     stopForeground(STOP_FOREGROUND_REMOVE);
 
                                     recordingStarted = false;
@@ -500,12 +467,10 @@ public class ControlRing extends IntentService {
                                     MainActivity.setButtonColor(MainActivity.ringStatusButton, Color.parseColor("#FF0000"));
                                     MainActivity.ringRecordingState = "false";
 
-                                    //MainActivity.writeToLog("Closing the buffered output stream of ring sensor file.");
                                     if (Objects.nonNull(bufferedOutputStream)) {
                                         bufferedOutputStream.close();
                                         logFunction.information("Ring_MT", "Closing the file output stream.");
                                     }
-                                    //MainActivity.writeToLog("Closing the file output stream.");
                                     fileOutputStream.close();
 
                                     /* Reason if the ring doesn't disconnect successfully:
@@ -534,7 +499,6 @@ public class ControlRing extends IntentService {
 
 
                                 } catch (IOException e) {
-                                    //MainActivity.writeToLog(e.toString());
                                     logFunction.error("Ring_BT", "Disconnection error: " + e.toString() );
                                     e.printStackTrace();
                                 }
@@ -553,10 +517,6 @@ public class ControlRing extends IntentService {
                                 public void run() {
                                     logFunction.information("Ring_BT","Scanned for 5 secs, couldn't discover the required ring.");
                                     central.stopScan();
-                                    //recordingStarted = false;
-                                    // Informing user that connection to watch couldn't be established.
-                                    /*Toast.makeText(applicationContext, "Couldn't connect to ring, please try again!",
-                                            Toast.LENGTH_LONG).show();*/
                                     if(!isConnectedOnce){
                                         showToast(applicationContext, "Couldn't connect to ring, please try again!", 1);
                                     }
@@ -569,8 +529,6 @@ public class ControlRing extends IntentService {
                         break;
                     case "disconnect_from_ring":
                         if (Objects.nonNull(RingPeripheral)) {
-                            /*System.out.println("Cancelling connection!");
-                            MainActivity.writeToLog("Cancelling the connection to the ring.");*/
                             central.cancelConnection(RingPeripheral);
                         }
                 }
@@ -621,7 +579,6 @@ public class ControlRing extends IntentService {
             mediaPlayer = MediaPlayer.create(this, R.raw.alarm);
             mediaPlayer.setVolume(0.6f, 0.6f); // Set the volume to 60%
             if(s.equals("start")){
-                //mediaPlayer.setDataSource(audioUrl);
                 System.out.println("Playing audio: " + s);
                 mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                     @Override
@@ -668,18 +625,6 @@ public class ControlRing extends IntentService {
 
     public void onDestroy() {
         logFunction.error("Foreground_Ring", "onDestroy.");
-        /*if(recordingStarted){
-            if(wakeLockRing.isHeld()){
-                wakeLockRing.release();
-                logFunction.information("Ring", "Wakelock is released but the recording is ongoing");
-                ControlWatch.sendDataItem("/phone_status", "state", "onStop");
-            }
-        }else{
-            if(wakeLockRing.isHeld()){
-                wakeLockRing.release();
-                logFunction.information("Ring", "Wakelock is released");
-            }
-        }*/
         if(wakeLockRing.isHeld()){
             wakeLockRing.release();
             logFunction.error("Ring", "Wakelock is released but the recording is ongoing");

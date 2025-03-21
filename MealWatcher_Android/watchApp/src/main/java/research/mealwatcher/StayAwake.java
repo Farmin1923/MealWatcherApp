@@ -107,8 +107,6 @@ public class StayAwake extends IntentService {
 
     @Override
     public void onCreate() {
-//        System.out.println("In On create of StayAwake");
-//        MainActivity_new.writeToLog("In On create of StayAwake");
         logFunction_watch = new LogFunction_Watch();
 
         super.onCreate();
@@ -129,12 +127,6 @@ public class StayAwake extends IntentService {
         super.onLowMemory();
     }
 
-    /*public void onDestroy() { // 2024-03-24-00-34-35-watch
-        logFunction_watch.information("Foreground_Activity", "onDestroy");
-        stopForeground(STOP_FOREGROUND_REMOVE);
-        // MainActivity_new.writeToLog("in ondestroy() of stay awake service");
-        // System.out.println("in ondestroy() of stay awake service");
-    }*/
 
     @Nullable
     @Override
@@ -147,7 +139,6 @@ public class StayAwake extends IntentService {
     }
 
     private void startRecording() {
-        //MainActivity_new.writeToLog("in start recording method of stay awake service");
         mIsSensorUpdateEnabled = true;
 
         int samplingRate = 10000;
@@ -178,9 +169,6 @@ public class StayAwake extends IntentService {
              */
             @Override
             public void onSensorChanged(SensorEvent event) {
-//                System.out.println("received sensor reading");
-//                MainActivity_new.wakeLock.acquire(60*60*1000L /*1 hour*/);
-                //MainActivity_new.writeToLog("received sensor reading");
                 if (mIsSensorUpdateEnabled) {
                     // callback code here
                     if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
@@ -248,26 +236,13 @@ public class StayAwake extends IntentService {
                         runningSec = (runningTotalMS - (runningHour * 3600000) - (runningMin * 60000)) / 1000;
 
 
-                        /*
-                        Deliberately closing the watch application after one hour of recording if
-                        phone app is closed and watch is still recording.
-                        */
-                        /*if (runningHour >= 1) {
-                            System.out.println("Running for 1 hour");
-                            //logFunction_watch.information("Watch","Deliberately closing the watch application after one hour of recording.");
-                            //cleanUp();
 
-                            //Intent intent = new Intent("com.example.ACTION_FINISH_TASK_ACTIVITY");
-                            //sendBroadcast(intent);
-                        } else {
 
-                        }*/
                         // call function in Classifier class to add data to buffer and run classifier
                         // see README.txt for explanation of android->our coord sys transform
                         // converting accel and linear accel from m/s^2 to G; converting gyro from rad/s to deg/s
                         // throttling sampling rate to 100 Hz (10 ms)
                         if (runningSamples < runningTotalMS / 10.0) { /* initially (runningTotalMS / 66.667) this will be 15 Hz.*/
-                            //MainActivity_new.writeToLog("Sending recording values to classifier");
                             classifier.newData(sensor_reading, timeStamp);
                             runningSamples++;
                         }
@@ -303,25 +278,13 @@ public class StayAwake extends IntentService {
         boolean orientationRegistered = sensorManager.registerListener(sensorCallback, orientationSensor, samplingRate, 10);
         boolean rotationRegistered = sensorManager.registerListener(sensorCallback, rotationalMatSensor, samplingRate, 10);
 
-        //System.out.println("gyroSensorRegistered = " + gyroSensorRegistered + " accelSensorRegistered = " + accelSensorRegistered);
 
         startingTime = System.currentTimeMillis();
 
-        //MainActivity_new.writeToLog("Uploading files to phone...");
-        // start uploading files if there are any.
-        //System.out.println("Uploading files to phone...");
         MainActivity_new.isInitialUpload = true;
-        //uploadHandler.post(uploadRunnable);
     }
 
     private void startUploading() {
-        //uploading files to mobile memory.
-        //MainActivity_new.writeToLog("Total data stored in watch file: " + TotalDataReceived);
-        //MainActivity_new.writeToLog("phone app is on so uploading files to phone");
-        //System.out.println("Started uploading to phone...");
-        //System.out.println("is sensor manager null = " + Objects.isNull(sensorManager)); // true
-
-        //cleanUp();
 
         // Uploads the files on the watch to phone in a separate thread.
         fileSentThread = new Thread(new Runnable() {
@@ -345,26 +308,21 @@ public class StayAwake extends IntentService {
         });
         fileSentThread.start();
 
-//        stopForeground(STOP_FOREGROUND_REMOVE);
     }
 
     static void scanDir(File directory) {
-        //MainActivity_new.writeToLog("Scanning directory for files");
         File[] files = directory.listFiles();
 
         //TODO: check here.
         for (int index = 0; index < files.length; index++) {
-            // System.out.println("Condition of sendFile: " + MainActivity_new.isSendFileClicked);
             if(MainActivity_new.isSendFileClicked){
                 if(files[index].getName().equals(Classifier.fileName)){
                     System.out.println("Files to not upload although the upload button is clicked: " + files[index].getName());
-                    //logFunction_watch.information("Watch", "Files to not upload although the upload button is clicked: " + files[index].getName() );
                     continue;
                 }
             }else{
                 if(files[index].getName().endsWith(".txt") || files[index].getName().equals(MainActivity_new.logFileName)) {
                     System.out.println("Files to continue: " + files[index].getName());
-                    //files[index].delete();
                     continue;
                 }
             }
@@ -373,12 +331,10 @@ public class StayAwake extends IntentService {
             dataFiles.add(files[index]);
         }
 
-//        MainActivity_new.writeToLog("Got " + dataFiles.size() + " number of files into list.");
     }
 
     static void uploadFilesToPhone(File directory, DataClient dataClient,
                                    Boolean isInitialUpload, int numOfFile) {
-//        MainActivity_new.writeToLog("Uploading files to phone");
         if (dataFiles.size() > 0 && dataFiles.size() == numOfFile) {
 
             compressAndSend(dataFiles.get(0), directory.getAbsolutePath(), dataClient, numOfFile);
@@ -387,7 +343,6 @@ public class StayAwake extends IntentService {
         } else if(numOfFile == 0 && !isInitialUpload) {
             System.out.println("Sending data ack!");
             MainActivity_new.filesFailedUpload = 0;
-//            MainActivity_new.writeToLog("Sending data ack for file " + fileName);
             MainActivity_new.sendMessageToMobile("/data_transfer_ack",
                     "all_files_sent", "yes");
             logFunction_watch.information("Watch","Send a message to the mobile: 'All files are sent.'");
@@ -400,7 +355,6 @@ public class StayAwake extends IntentService {
 
     static void compressAndSend(File originalFile, String directory, DataClient dataClient,
                                 int numOfFile) {
-//        MainActivity_new.writeToLog("Compressing the data");
         try {
             // Create an Asset from the file using a FileDescriptor
             File file = new File(directory + "/" + originalFile.getName());
@@ -418,7 +372,6 @@ public class StayAwake extends IntentService {
     private static void sendFileToMobile(String key, Asset data, String fileName, DataClient dataClient,
                                          int numOfFile) {
 
-//        MainActivity_new.writeToLog("sending file to mobile");
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/file_path");
         putDataMapReq.getDataMap().putAsset(key, data);
         putDataMapReq.getDataMap().putString("fileName", fileName);
@@ -426,19 +379,15 @@ public class StayAwake extends IntentService {
         putDataMapReq.getDataMap().putInt("numOfFiles", numOfFile);
         Task<DataItem> putDataTask = dataClient.putDataItem(putDataMapReq.asPutDataRequest());
         logFunction_watch.information("Watch", "Send a file to the mobile named: " + fileName);
-        //MainActivity_new.writeToLogTime("The name of the file sent to the mobile: " + fileName);
 
         putDataTask.addOnSuccessListener(new OnSuccessListener<DataItem>() {
             @Override
             public void onSuccess(DataItem dataItem) {
-                // MainActivity_new.writeToLog("Data file sent successfully " + fileName);
-                //System.out.println("Data Sent Successfully! :)" + key);
                 logFunction_watch.information("Phone","Sending the file: " + fileName +" is successful.");
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                //System.out.println("Data Sent Failed! :(");
                 logFunction_watch.error("Phone","Data sent failed! " + e.toString());
                 e.printStackTrace();
             }
@@ -448,12 +397,8 @@ public class StayAwake extends IntentService {
     private static void cleanUp() {
         if(sessionFinished){
             if (Objects.nonNull(sensorManager)) {
-                /*if(wakeLock.isHeld()){
-                    wakeLock.release();
-                    logFunction_watch.information("WakeLock","WakeLock is released.");
-                }*/
+
                 logFunction_watch.information("Watch","Unregistering the sensor manager in cleanup method");
-                //System.out.println("Unregistering the sensor manager.");
                 //unregister the callbacks for the sensors (otherwise the app wont end)
                 sensorManager.unregisterListener(sensorCallback);
                 mIsSensorUpdateEnabled = false;
@@ -462,8 +407,6 @@ public class StayAwake extends IntentService {
 
             try {
                 //call closeClassifier to close the files to which sensor data is written.
-                // System.out.println("closing classifier");
-                // MainActivity_new.writeToLog("closing classifier");
                 classifier.closeClassifier();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -474,11 +417,8 @@ public class StayAwake extends IntentService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //MainActivity_new.writeToLog("in onStartCommand() of watch");
 
         if (Objects.nonNull(intent)) {
-            //System.out.println("in intent");
-            //MainActivity_new.writeToLog("Got an intent!");
             final String action = intent.getAction();
             logFunction_watch.information("Watch", "Current action is executing: " + action);
 
@@ -507,8 +447,6 @@ public class StayAwake extends IntentService {
                                     logFunction_watch.information("WakeLock", "WakeLock is acquired");
                                 }
 
-                                //System.out.println("Should start recording!");
-                                //MainActivity_new.writeToLog("calling the start record method");
                                 startRecording();
                             }
                         });

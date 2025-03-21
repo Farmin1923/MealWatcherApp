@@ -141,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
     static String prev_pid_value; /* Variable to store the previous value of participant id.*/
     static String prev_location_value; /* Variable to store the previous value of location.*/
 
+
     static int prev_ring_id_value; /* Variable to store the previous position of ring id value in ring id array.*/
 
     static int prev_location_id_value; /* Variable to store the previous position of location id value in location array.*/
@@ -204,18 +205,10 @@ public class MainActivity extends AppCompatActivity {
     static String ringRecordingState = "false";
     static String prePictureTaken = "false";
     static String postPictureTaken = "false";
-    static boolean is_debugging = true; /* This flag is used to let us know if we should log or not. */
     static String logFileName = null;
     static String currentLogFileName = null;
     static File logFile;
-    static FileOutputStream fos;
-    static String logTimeFileName = null;
-    static File logFileTime;
-    static FileOutputStream fosTime;
 
-    static String logSyncFileName = null;
-    static File logFileSync;
-    static FileOutputStream fosSync;
     private String filePrefix;
     private RecyclerView recyclerView;
     private ImageAdapter imageAdapter;
@@ -300,7 +293,6 @@ public class MainActivity extends AppCompatActivity {
     static CheckBox takeSurvey; /* Check box which tracks if survey is taken or not. */
 
     private LogFunction logFunction;
-    private boolean isPIDChanged;
     private Handler recordingHandler; //For closing the app after 1 hour
     private Runnable recordingEndRunnable;
     static boolean watchRecordStarted;
@@ -310,8 +302,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static boolean isToastShown;
     private static boolean storingChargeFirstTime;
-    private MediaPlayer mediaPlayer;
-
 
 
     BroadcastReceiver batteryLevelReceiver = new BroadcastReceiver(){
@@ -320,7 +310,6 @@ public class MainActivity extends AppCompatActivity {
             int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
             float battPct = level * 100 /(float)scale;
-            //System.out.println("Battery percentage: " + battPct);
 
             if(battPct <= 50.0 && !isToastShown){
                 showToast( "Please recharge your phone soon!!", 1);
@@ -349,7 +338,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //logFunction.information("Activity", "onCreate.");
 
         //For making the battery settings unrestricted
         PowerManager powerManager = (PowerManager) getApplicationContext().getSystemService(POWER_SERVICE);
@@ -430,7 +418,6 @@ public class MainActivity extends AppCompatActivity {
         logFunction.information("Phone","Getting required permissions");
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
-            //Toast.makeText(applicationContext, "No Bluetooth hardware?", Toast.LENGTH_SHORT).show();
             showToast("No Bluetooth hardware?", 0);
             return;
         }
@@ -513,20 +500,6 @@ public class MainActivity extends AppCompatActivity {
             });
             thread_to_close_camera.start();
         }
-        /*timer = new Timer();
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                System.out.println("Timer is running");
-                if(recordingStarted){
-                    System.out.println("Closing the app");
-                    logFunction.information("Phone", "App is forcefully closed as exceeds the max duration");
-                    finishAffinity();
-                }
-            }
-        };
-        timer.scheduleAtFixedRate(timerTask, 0, 120 * 1000);
-*/
 
         super.onPause();
     }
@@ -630,7 +603,6 @@ public class MainActivity extends AppCompatActivity {
                 setButtonColor(ringStatusButton, Color.parseColor("#FF0000"));
             }
 
-            //System.out.println("Location in home screen = " + prev_location_value);
         } else if (currentView == R.layout.camera) {
             logFunction.information("UI", "Camera");
             textureView = (TextureView) findViewById(R.id.texture); // "surface" to which images will be drawn; defined in camera.xml
@@ -645,7 +617,6 @@ public class MainActivity extends AppCompatActivity {
             buttonUsePhoto.setOnClickListener(imagePreviewUsePhotoListener);
             ImageView imageView = findViewById(R.id.imageView);
 
-            // File imgFile = new File(pictureFileName);
 
             File imgFile = new File(pictureFileName);
             // on below line we are checking if the image file exist or not.
@@ -671,14 +642,6 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v) {
 
                     ControlWatch.uploadButton = "clicked";
-                    /*if (failedUpload == 0) {
-                        //showToast("No files to upload", 0);
-                    } else {
-                        watchServiceIntent = new Intent(applicationContext, ControlWatch.class);
-                        watchServiceIntent.setAction("upload_to_dropbox");
-                        Log.d("DropBoxUpload", "Dropbox thread is started as the user clikced the button");
-                        startService(watchServiceIntent);
-                    }*/
 
                     watchServiceIntent = new Intent(applicationContext, ControlWatch.class);
                     watchServiceIntent.setAction("upload_to_dropbox");
@@ -694,7 +657,6 @@ public class MainActivity extends AppCompatActivity {
 
             pid_value = (EditText) findViewById(R.id.pid_value);
             pid_value.setText(prev_pid_value);
-            // Log.d("Settings", "PID value at the beginning: " + prev_pid_value);
 
             ring_id_spinner = (Spinner) findViewById(R.id.ring_spinner);
             location_id_spinner = (Spinner) findViewById(R.id.location_spinner);
@@ -757,7 +719,6 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                     if (prev_ring_id_value != position) {
-                        // Log.d("Settings", "Ring value while changing: " + position);
                         System.out.println("ring id changed!");
                         settingChanged = "true";
                     }
@@ -774,7 +735,6 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                     if (prev_location_id_value != position) {
-                        // Log.d("Settings", "Location value while changing: " + position);
                         settingChanged = "true";
                     }
                     prev_location_id_value = position;
@@ -789,7 +749,6 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                     if (prev_ring_id_value != position) {
-                        // Log.d("Settings", "Ring value while changing: " + position);
                         System.out.println("ring id changed!");
                         settingChanged = "true";
                     }
@@ -819,8 +778,6 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                     if (prev_watch_wrist != position) {
-                        // Log.d("Settings", "Ring value while changing: " + position);
-                        //System.out.println("ring id changed!");
                         settingChanged = "true";
                     }
                     prev_watch_wrist = position;
@@ -837,8 +794,6 @@ public class MainActivity extends AppCompatActivity {
                         settingChanged = "true";
                     }
                     prev_pid_value = s.toString();
-                    // Log.d("Settings", "PID changed to = " + prev_pid_value);
-
                 }
 
                 @Override
@@ -851,31 +806,12 @@ public class MainActivity extends AppCompatActivity {
             });
 
 
-            /*BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (bluetoothAdapter == null) {
-                // Device doesn't support Bluetooth
-            } else {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    return;
-                }
-
-            }*/
-
-            //System.out.println("Settings changed = " + settingChanged);
             // Setting the previous values to restore the state.
             if (prev_pid_value.length() < 5) {
                 prev_pid_value = "00000".substring(prev_pid_value.length()) + prev_pid_value; // This will ensure that the PID is four digit based on the PID value
             } else {
                 prev_pid_value = prev_pid_value;
             }
-            //Log.d("Settings", "PID after appending/not = " + prev_pid_value);
 
 
             pid_value.setOnClickListener(v -> {
@@ -926,7 +862,6 @@ public class MainActivity extends AppCompatActivity {
 
                     // Update the current position
                     currentPosition = firstVisibleItem;
-                    //System.out.println("Current position inside scroll listener: " + currentPosition);
                 }
             });
             // Disable RecyclerView scrolling gesture
@@ -1042,8 +977,6 @@ public class MainActivity extends AppCompatActivity {
             /* create a capture session that continuously streams images (i.e. preview) */
             try {
                 SurfaceTexture texture = textureView.getSurfaceTexture();
-                //SystemClock.sleep(3000);
-                //Thread.sleep(2000);
                 texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
                 Surface surface = new Surface(texture);
                 captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -1054,7 +987,6 @@ public class MainActivity extends AppCompatActivity {
                         if (cameraDevice == null) { // camera is already closed
                             return;
                         }
-//                        writeToLog("Camera capture session is ready");
                         // when the session is ready, start displaying the preview (live camera feed)
                         cameraCaptureSessions = cameraCaptureSession;
                         captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
@@ -1069,7 +1001,6 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
                         logFunction.error("Camera","Camera preview unavailable");
-                        //Toast.makeText(MainActivity.this, "Camera preview unavailable", Toast.LENGTH_SHORT).show();
                         showToast("Camera preview unavailable", 0);
                     }
                 }, null);
@@ -1077,10 +1008,7 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
                 String prepostImg = (PrePost == 0) ? "pre" : "post";
                 logFunction.error("Camera","Got an error: " + String.valueOf(e)  +" while accessing camera for" + prepostImg + " image." );
-                //writeToLog(String.valueOf(e));
-            } /*catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }*/
+            }
         }
 
         @Override
@@ -1112,7 +1040,6 @@ public class MainActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
                 return;
             }
-            //logFunction.information("Camera","Making a call to camera manger to open camera.");
             manager.openCamera(cameraId, cameraStateCallback, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -1125,12 +1052,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void closeCamera() {
         if (cameraDevice != null) {
-//            writeToLog("Closing the camera device");
             cameraDevice.close();
             cameraDevice = null;
-            /*if (cameraDevice == null) {
-                System.out.println("Camera Device Is Null");
-            }*/
         }
         if (imageReader != null) {
             imageReader.close();
@@ -1144,7 +1067,6 @@ public class MainActivity extends AppCompatActivity {
     /* at the end, sets the variable image_capture_done to 1 so we know everything is completed */
     protected void takePicture() {
         if (cameraDevice == null) {
-            //Toast.makeText(MainActivity.this, "Could not open camera", Toast.LENGTH_SHORT).show();
             showToast("Could not open camera", 0);
             logFunction.information("Camera", "Could not open camera.");
             return;
@@ -1161,8 +1083,6 @@ public class MainActivity extends AppCompatActivity {
             boolean isSupported = false;
 
             if (jpegSizes != null && 0 < jpegSizes.length) {
-                //width = jpegSizes[0].getWidth();
-                //height = jpegSizes[0].getHeight();
                 for (Size size : jpegSizes) {
                     if (size.getWidth() == width && size.getHeight() == height) {
                         isSupported = true;
@@ -1207,9 +1127,7 @@ public class MainActivity extends AppCompatActivity {
                 pictureFileName = newImageFolder + "/" + filePrefix + ".jpg";
                 takenImage = new File(pictureFileName);
 
-            }/*else{
-                pictureFileName = MainActivity.this.getExternalFilesDir(null) + "/" + filePrefix + ".jpg";
-            }*/
+            }
 
 
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
@@ -1227,9 +1145,7 @@ public class MainActivity extends AppCompatActivity {
                         output = new FileOutputStream(takenImage);
                         output.write(bytes);
                         output.close();
-//                        Toast.makeText(MainActivity.this, "Written:" + file, Toast.LENGTH_SHORT).show();
                         reader.close(); // have to call this or subsequent image capture may fail
-                        //writeToLog("Closed image reader");
                         image_capture_done = 1;
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
@@ -1264,17 +1180,14 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
             String prepostImg = (PrePost == 0) ? "pre" : "post";
             logFunction.error("Camera","Got an error: "+ String.valueOf(e)  +" while taking" + prepostImg + " image");
-            //writeToLog(String.valueOf(e));
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
-//            writeToLog("Requesting camera permissions");
             if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
                 // close the app
-                //Toast.makeText(MainActivity.this, "This app requires permission to use the phone's camera.  Please add permission.", Toast.LENGTH_LONG).show();
                 showToast("This app requires permission to use the phone's camera.  Please add permission.", 1);
                 logFunction.information("Permission", "User doesn't allow permission so closing the app");
                 finish();
@@ -1295,7 +1208,6 @@ public class MainActivity extends AppCompatActivity {
         isRecordingDone = false;
         storingChargeFirstTime = true;
         isToastShown = false;
-        //isPIDChanged = false;
         sharedPreferences = getSharedPreferences("myPreferences", 0);
         prev_pid_value = sharedPreferences.getString("prev_pid_value", "99999");
         prev_ring_id_value = Integer.parseInt(sharedPreferences.getString("prev_ring_id_value", "0"));
@@ -1304,7 +1216,8 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("Location at the beginning: " + prev_location_value);
         prev_button_position = Integer.parseInt(sharedPreferences.getString("prev_button_position", "0"));
         prev_watch_wrist = Integer.parseInt(sharedPreferences.getString("prev_wrist_position", "0"));
-        //prev_watch_wrist = sharedPreferences.getString("prev_watch_id_value", "0");
+        String prev_button_position_value = sharedPreferences.getString("prev_button_position_value", "Right/Top");
+        String prev_watch_wrist_value = sharedPreferences.getString("prev_wrist_position_value", "Right");
         failedUpload = sharedPreferences.getInt("failed_upload", 0);
 
         LocalDateTime now = LocalDateTime.now();
@@ -1316,15 +1229,16 @@ public class MainActivity extends AppCompatActivity {
         logFile = new File(applicationContext.getExternalFilesDir(null), currentLogFileName);
         logFunction.setLogFile(logFile);
         logFunction.openFile();
-        //int versionCode = BuildConfig.VERSION_CODE;
+        String osVersion = Build.VERSION.RELEASE;
+        int sdkVersion = Build.VERSION.SDK_INT;
         String versionName = BuildConfig.VERSION_NAME;
         String manufacturer = Build.MANUFACTURER;
         String model = Build.MODEL;
 
         logFunction.information("Phone", "Version number of the app: " + versionName);
-        logFunction.information("Phone", "Phone model: " + manufacturer + model);
+        logFunction.information("Phone", "Phone model: " + manufacturer + " " + model + " ,OS version: " + osVersion + " ,SDK: " + sdkVersion);
         logFunction.information("Description", "MT: Main_Thread, BT: Bluetooth connection.");
-        logFunction.information("Settings", "PID value: " + prev_pid_value + " Location value: " + prev_location_value);
+        logFunction.information("Settings", "PID: " + prev_pid_value + ", Location: " + prev_location_value + ", Wrist: " + prev_watch_wrist_value + ", Button: " + prev_button_position_value);
 
         int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
@@ -1343,9 +1257,7 @@ public class MainActivity extends AppCompatActivity {
         watchServiceIntent.setAction("start_service");
         startService(watchServiceIntent);
         if(failedUpload != 0){
-            //logFunction.information("Watch", "Starting watch service to upload remaining files from previous session");
             watchServiceIntent.setAction("upload_to_dropbox");
-            //Log.d("DropBoxUpload", "Dropbox thread is started at the beginning to upload failed file");
 
             startService(watchServiceIntent);
         }
@@ -1387,11 +1299,9 @@ public class MainActivity extends AppCompatActivity {
 
                 // Starting the watch app ensures that the app on watch is started before we
                 // start recording the sensor data on watch.
-                //controlWatch.startWatchApp();
 
                 System.out.println("Launch watch app button is clicked");
                 watchServiceIntent.setAction("start_watch_app");
-                //startForegroundService(serviceIntent);
                 startService(watchServiceIntent);
             }
         };
@@ -1418,36 +1328,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //will use this variable for checking if the ring has been disconnected for clicking the post picture button
-                //boolean finish = true;
-                //ringServiceIntent.putExtra("finish", finish);
                 isRecordingDone = true;
                 logFunction.information("Ring_MT", "Ring button is clicked for disconnecting the ring.");
                 ringServiceIntent.setAction("disconnect_from_ring");
                 startService(ringServiceIntent);
             }
         };
-        /*watchRecordButtonOnClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                System.out.println("In on click listener of record");
-                if (ControlWatch.isFileTransferDone.equals("False")) {
-                    *//*Toast.makeText(MainActivity.applicationContext, "The watch file is saving. " +
-                                    "Please wait!!", Toast.LENGTH_LONG).show();*//*
-                    showToast("The watch file is saving. Please wait!!", 1);
 
-                } else {
-                    if (watchRecordStatus.equals("false")) {
-                        // Starting the watch app ensures that the app on watch is started before we
-                        // start recording the sensor data on watch.
-                        //controlWatch.startWatchApp();
-                        watchServiceIntent.setAction("start_watch_app");
-                        //startForegroundService(serviceIntent);
-                        startService(watchServiceIntent);
-                    }
-                }
-
-            }
-        };*/
 
         ringRecordButtonOnClickListener = new View.OnClickListener() {
             @Override
@@ -1458,7 +1345,6 @@ public class MainActivity extends AppCompatActivity {
                     ringServiceIntent.setAction("start_scanning_for_ring");
                     startService(ringServiceIntent);
                 }
-                //recordingHandler.postDelayed(recordingEndRunnable, 15*60*1000);
             }
         };
 
@@ -1475,7 +1361,6 @@ public class MainActivity extends AppCompatActivity {
 
                     logFunction.information("Camera" , "Post picture is clicked");
                     takeAfterMealPicture.setChecked(true);
-//                    ControlWatch.isFileTransferDone = "False";
                     MainActivity.mainUIThread.switchView(R.layout.camera);
                 }
             }
@@ -1529,8 +1414,6 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("Setting color");
                     setButtonColor(surveyButton, Color.parseColor("#FFA500"));
                     System.out.println("Set color");
-                    /*Toast.makeText(MainActivity.this, "Please take the survey if you are done with the meal.",
-                            Toast.LENGTH_LONG).show();*/
                     showToast("Please take the survey if you are done with the meal.", 1);
                 } else {
                     prePictureTaken = "true";
@@ -1543,8 +1426,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 // James's Github Tutorial Comment
                 if (settingChanged.equals("true")) {
-                    /*Toast toast = Toast.makeText(applicationContext, "Settings changed!", Toast.LENGTH_SHORT);
-                    toast.show();*/
+
                     showToast("Settings Changed!", 0);
                     logFunction.information("Settings","Settings have been successfully changed! Storing the values to sharedPreferences");
 
@@ -1578,12 +1460,11 @@ public class MainActivity extends AppCompatActivity {
                     mEditor.putString("prev_location_id_value", String.valueOf(prev_location_id_value));
                     mEditor.putString("prev_location_value", location_id_spinner.getSelectedItem().toString());
                     mEditor.putString("prev_button_position", String.valueOf(prev_button_position));
+                    mEditor.putString("prev_button_position_value", button_position_spinner.getSelectedItem().toString());
                     mEditor.putString("prev_wrist_position", String.valueOf(prev_watch_wrist));
+                    mEditor.putString("prev_wrist_position_value", watch_wrist_spinner.getSelectedItem().toString());
 
                     prev_location_value = location_id_spinner.getSelectedItem().toString(); //Which location is selected
-
-
-                    //mEditor.putString("prev_watch_id_value", prev_watch_wrist);
                     mEditor.apply();
 
                     System.out.println("File name is renamed as PID changed");
@@ -1605,7 +1486,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 takeSurvey.setChecked(true);
-//                writeToLog("Survey button clicked, launching survey");
                 // Create an Intent to launch the Survey Class
                 Intent intent = new Intent(MainActivity.this, Survey.class);
                 // Start the Survey!
@@ -1625,9 +1505,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // Get the list of image files from internal storage
-                //String directoryName = String.valueOf(MainActivity.this.getExternalFilesDir(null));
-                //File internalStorageDir = new File(directoryName);
-                //File[] internalStorageFiles = internalStorageDir.listFiles();
                 File[] internalStorageFiles = newImageFolder.listFiles();
                 imageFiles = new ArrayList<>();
                 if (Objects.nonNull(internalStorageFiles)) {
@@ -1685,7 +1562,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void confirmSettingsChanged() {
-//        writeToLog("Confirming if setting have to be changed");
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 
         // Set the message show for the Alert time
@@ -1698,11 +1574,8 @@ public class MainActivity extends AppCompatActivity {
         builder.setCancelable(false);
 
         builder.setPositiveButton("Yes", (DialogInterface.OnClickListener) (dialog, which) -> {
-//            writeToLog("User confirmed that the settings have to be changed");
             pid_value.setFocusable(true);
             pid_value.setFocusableInTouchMode(true);
-            //location_id_spinner.setFocusable(true);
-            //location_id_spinner.setFocusableInTouchMode(true);
             watch_wrist_spinner.setFocusable(true);
             watch_wrist_spinner.setFocusableInTouchMode(true);
             ring_id_spinner.setFocusable(true);
@@ -1714,7 +1587,6 @@ public class MainActivity extends AppCompatActivity {
             ring_id_spinner.setOnTouchListener(null);
             watch_wrist_spinner.setOnTouchListener(null);
             button_position_spinner.setOnTouchListener(null);
-            //location_id_spinner.setOnTouchListener(null);
 
             // Closing the alert box.
             dialog.cancel();
@@ -1723,9 +1595,7 @@ public class MainActivity extends AppCompatActivity {
         // Set the Negative button with No name Lambda OnClickListener method is use of DialogInterface interface.
         builder.setNegativeButton("Cancel", (DialogInterface.OnClickListener) (dialog, which) -> {
             // If user click no then dialog box is canceled.
-//            writeToLog("Settings are not changed");
             dialog.cancel();
-//            MainActivity.mainUIThread.switchView(R.layout.home);
         });
 
         // Create the Alert dialog
@@ -1748,15 +1618,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void switchView(final int desired_view) {
-//        writeToLog("Switching the view");
 
-        /*currentView = desired_view;
-        MainActivity.this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                setContentView(desired_view);
-            }
-        });*/
+
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             currentView = desired_view;
             MainActivity.this.runOnUiThread(new Runnable() {
@@ -1766,21 +1629,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }, 500);  // 500ms delay
-        /*Log.d("MainActivity", "Delaying switchView execution");
 
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            Log.d("MainActivity", "Executing switchView now");
-
-
-
-        }, 2000);  // 2-second delay*/
     }
 
 
 
     @Override
     public void onBackPressed() {
-//        writeToLog("Back button is pressed");
         // Changing the layout from camera to home when the back button is pressed in camera layout.
         // When the back button is pressed in home layout, we are closing the application.
         if (currentView == R.layout.camera || currentView == R.layout.settings_layout ||
@@ -1811,7 +1666,6 @@ public class MainActivity extends AppCompatActivity {
             logFunction.information("Phone", "App is closing normally");
         }else{
             ControlWatch.sendDataItem("/phone_status", "state", "onStopUser");
-            // playAudio("destroy","start");
             logFunction.error("Phone", "There is a crash in the phone app");
         }
 
@@ -1827,12 +1681,6 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(batteryLevelReceiver);
         logFunction.closeFile();
 
-
-        /*if(timer != null){
-            timer.cancel();
-            timer.purge();
-        }*/
-
         super.onDestroy();
     }
 
@@ -1843,7 +1691,6 @@ public class MainActivity extends AppCompatActivity {
         TextView toastText = layout.findViewById(R.id.toast_text);
         toastText.setText(message);
         Toast toast = new Toast(getApplicationContext());
-        //toast.setGravity(Gravity.CENTER,0,150);
         if (duration == 0) {
             toast.setDuration(Toast.LENGTH_SHORT);
         } else {
